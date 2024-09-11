@@ -6,19 +6,35 @@ import { Button } from './button';
 import { Download, Heart } from 'lucide-react'; // Import icons
 
 interface EmojiGridProps {
-  emojis: string[];
+  emojis: Array<{
+    url: string;
+    likes: number;
+    isLiked: boolean;
+  }>;
+  onLike: (index: number) => void;
 }
 
-export function EmojiGrid({ emojis }: EmojiGridProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
-  const handleDownload = (url: string) => {
-    window.open(url, '_blank');
+export function EmojiGrid({ emojis, onLike }: EmojiGridProps) {
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'emoji.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error downloading emoji:', error);
+    }
   };
 
-  const handleLike = (index: number) => {
-    // TODO: Implement like functionality
-    console.log(`Liked emoji at index ${index}`);
+  const handleLikeClick = (index: number) => {
+    console.log(`Like button clicked for emoji at index ${index}`);
+    onLike(index);
   };
 
   return (
@@ -27,24 +43,24 @@ export function EmojiGrid({ emojis }: EmojiGridProps) {
         <Card
           key={index}
           className="relative overflow-hidden group"
-          onMouseEnter={() => setHoveredIndex(index)}
-          onMouseLeave={() => setHoveredIndex(null)}
         >
-          <img src={emoji} alt={`Generated Emoji ${index + 1}`} className="w-full h-auto" />
+          <img src={emoji.url} alt={`Generated Emoji ${index + 1}`} className="w-full h-auto" />
           <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <Button 
-              onClick={() => handleDownload(emoji)} 
+              onClick={() => handleDownload(emoji.url)} 
               className="mr-2 bg-white text-black hover:bg-gray-200 transition-colors"
               size="sm"
             >
               <Download className="mr-1 h-4 w-4" /> Download
             </Button>
             <Button 
-              onClick={() => handleLike(index)}
-              className="bg-red-500 text-white hover:bg-red-600 transition-colors"
+              onClick={() => handleLikeClick(index)}
+              className={`${
+                emoji.isLiked ? 'bg-red-500' : 'bg-white'
+              } text-black hover:bg-red-600 hover:text-white transition-colors`}
               size="sm"
             >
-              <Heart className="mr-1 h-4 w-4" /> Like
+              <Heart className="mr-1 h-4 w-4" fill={emoji.isLiked ? 'white' : 'none'} /> {emoji.likes}
             </Button>
           </div>
         </Card>
