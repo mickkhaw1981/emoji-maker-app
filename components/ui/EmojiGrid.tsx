@@ -1,4 +1,6 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { getAllEmojis } from '@/utils/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 interface Emoji {
   id: number;
@@ -6,56 +8,42 @@ interface Emoji {
   prompt: string;
   likes_count: number;
   creator_user_id: string;
-  created_at: string;
 }
 
-interface EmojiGridProps {
-  emojis: Emoji[];
-  onLike: (id: number) => void;
-}
+export function EmojiGrid() {
+  const [emojis, setEmojis] = useState<Emoji[]>([]);
 
-export function EmojiGrid({ emojis, onLike }: EmojiGridProps) {
-  console.log('Emojis received in EmojiGrid:', JSON.stringify(emojis, null, 2));
+  useEffect(() => {
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-  if (!Array.isArray(emojis) || emojis.length === 0) {
-    return <div>No emojis to display</div>;
-  }
+    async function fetchEmojis() {
+      const fetchedEmojis = await getAllEmojis();
+      setEmojis(fetchedEmojis);
+    }
+
+    fetchEmojis();
+
+    const subscription = supabase
+      .channel('public:emojis')
+      .on('INSERT', (payload) => {
+        setEmojis((prevEmojis) => [payload.new as Emoji, ...prevEmojis]);
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {emojis.map((emoji, index) => {
-        if (!emoji || typeof emoji !== 'object') {
-          console.error(`Invalid emoji at index ${index}:`, emoji);
-          return null;
-        }
-
-        const { id, image_url, prompt, likes_count } = emoji;
-
-        if (!id || !image_url || !prompt) {
-          console.error(`Emoji at index ${index} is missing required properties:`, emoji);
-          return null;
-        }
-
-        return (
-          <div key={id} className="relative">
-            <img 
-              src={image_url} 
-              alt={`Generated Emoji: ${prompt}`} 
-              className="w-full h-auto" 
-              onError={(e) => {
-                console.error('Error loading image:', e);
-                (e.target as HTMLImageElement).src = '/fallback-image.png';
-              }}
-            />
-            <button
-              onClick={() => onLike(id)}
-              className="absolute top-2 right-2 text-gray-500"
-            >
-              ❤️ {likes_count}
-            </button>
-          </div>
-        );
-      })}
+    <div className="grid grid-cols-3 gap-4 mt-8">
+      {emojis.map((emoji) => (
+        <div key={emoji.id} className="border rounded p-2">
+          <img src={emoji.image_url} alt={emoji.prompt} className="w-full h-auto" />
+          <p className="mt-2 text-sm">{emoji.prompt}</p>
+          <p className="text-xs text-gray-500">Likes: {emoji.likes_count}</p>
+        </div>
+      ))}
     </div>
   );
 }
