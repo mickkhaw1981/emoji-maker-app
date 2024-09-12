@@ -4,25 +4,25 @@ import { useState } from 'react';
 import { EmojiGenerator } from '../components/ui/EmojiGenerator';
 import { EmojiGrid } from '../components/ui/EmojiGrid';
 
-export default function Home() {
-  const [generatedEmojis, setGeneratedEmojis] = useState<Array<{ url: string, likes: number, isLiked: boolean }>>([]);
+interface Emoji {
+  id: number;
+  image_url: string;
+  prompt: string;
+  likes_count: number;
+  creator_user_id: string;
+  created_at: string;
+}
 
-  const handleEmojiGenerated = (url: string) => {
-    setGeneratedEmojis((prev) => [{ url, likes: 0, isLiked: false }, ...prev]);
+export default function Home() {
+  const [generatedEmojis, setGeneratedEmojis] = useState<Emoji[]>([]);
+
+  const handleEmojiGenerated = (emoji: Emoji) => {
+    console.log('New emoji generated:', emoji);
+    setGeneratedEmojis((prev) => [emoji, ...prev]);
   };
 
   const handleLike = (index: number) => {
-    console.log(`handleLike called for index ${index}`);
-    setGeneratedEmojis((prev) => {
-      const newEmojis = [...prev];
-      newEmojis[index] = {
-        ...newEmojis[index],
-        likes: newEmojis[index].isLiked ? newEmojis[index].likes - 1 : newEmojis[index].likes + 1,
-        isLiked: !newEmojis[index].isLiked,
-      };
-      console.log('Updated emojis:', newEmojis);
-      return newEmojis;
-    });
+    // ... existing like handling code ...
   };
 
   return (
