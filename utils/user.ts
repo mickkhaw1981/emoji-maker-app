@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase';
 
 export async function createOrGetUser(userId: string) {
   // Check if user exists
@@ -6,35 +6,28 @@ export async function createOrGetUser(userId: string) {
     .from('profiles')
     .select('*')
     .eq('user_id', userId)
-    .single()
+    .single();
 
   if (fetchError && fetchError.code !== 'PGRST116') {
-    console.error('Error fetching user:', fetchError)
-    throw fetchError
+    console.error('Error fetching user:', fetchError);
+    throw fetchError;
   }
 
   if (existingUser) {
-    console.log('User already exists:', existingUser)
-    return existingUser
+    return existingUser;
   }
 
   // If user doesn't exist, create a new one
   const { data: newUser, error: insertError } = await supabase
     .from('profiles')
-    .insert([
-      {
-        user_id: userId,
-        credits: 3,
-        tier: 'free'
-      }
-    ])
-    .single()
+    .insert({ user_id: userId })
+    .select()
+    .single();
 
   if (insertError) {
-    console.error('Error creating user:', insertError)
-    throw insertError
+    console.error('Error creating user:', insertError);
+    throw insertError;
   }
 
-  console.log('New user created:', newUser)
-  return newUser
+  return newUser;
 }
